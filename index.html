@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sade Haber">
+<meta name="theme-color" content="#EDF0F3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F151B" media="(prefers-color-scheme: dark)">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Sade Haber</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,500&display=swap">
+<style>
+/* Layout: one narrow wire-feed column. A time gutter on the left, the story on the right;
+   a sticky masthead holds the region filters. Region colour is a label, never a fill. */
+:root{
+  --bg:#EDF0F3; --surface:#FFFFFF; --ink:#16222E; --muted:#566371; --line:#D2D9E0; --chip:#DFE5EA;
+  --world:#1B5A85; --nl:#B0420F; --tr:#B3122A; --ok:#1A7F52; --focus:#1B5A85; --mark:#F8E6A0;
+  --f-read:'Newsreader',Georgia,'Times New Roman',serif;
+  --f-ui:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-wire:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F151B; --surface:#19222B; --ink:#E6EBEF; --muted:#94A1AD; --line:#27323D; --chip:#212C37;
+    --world:#74B6E2; --nl:#F08C52; --tr:#F26B78; --ok:#4FC48D; --focus:#74B6E2; --mark:#4A4420; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F151B; --surface:#19222B; --ink:#E6EBEF; --muted:#94A1AD; --line:#27323D; --chip:#212C37;
+  --world:#74B6E2; --nl:#F08C52; --tr:#F26B78; --ok:#4FC48D; --focus:#74B6E2; --mark:#4A4420; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14px;line-height:1.45}
+.wrap{max-width:680px;margin-inline:auto;padding-inline:20px}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+button{font-family:inherit}
+
+/* masthead */
+.mast{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.mast .wrap{padding-block:12px 10px;display:flex;flex-direction:column;gap:10px}
+.mast-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px 16px;flex-wrap:wrap}
+.mast h1{font-family:var(--f-read);font-style:italic;font-weight:500;font-size:1.75rem;line-height:1;margin:0;letter-spacing:-.01em}
+.status{display:flex;align-items:center;gap:8px;font-family:var(--f-wire);font-size:12px;color:var(--muted);min-width:0}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--line);flex:none}
+.dot.on{background:var(--ok);animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion: reduce){.dot.on{animation:none}}
+.bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pill{font-size:13px;font-weight:500;padding:6px 12px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;cursor:pointer;display:inline-flex;gap:6px;align-items:baseline}
+.pill[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.pill .n{font-family:var(--f-wire);font-size:11px;opacity:.7;font-variant-numeric:tabular-nums}
+.refresh{margin-left:auto;font-size:13px;font-weight:500;padding:6px 12px;border:1px solid var(--ink);background:var(--surface);color:var(--ink);border-radius:999px;cursor:pointer}
+.refresh:disabled{border-color:var(--line);color:var(--muted);cursor:default}
+
+/* feed */
+.lede{font-size:14px;color:var(--muted);margin:0;padding-block:16px 0;max-width:60ch}
+.day{font-family:var(--f-wire);font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0;padding-block:24px 10px}
+.item{display:grid;grid-template-columns:3rem minmax(0,1fr);column-gap:14px;padding-block:20px 22px;border-top:1px solid var(--line)}
+.when{font-family:var(--f-wire);font-size:13px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums;padding-top:1px}
+.story{min-width:0}
+.line{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-family:var(--f-wire);font-size:11px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.reg{display:inline-flex;align-items:center;gap:6px}
+.reg::before{content:"";width:8px;height:8px;background:currentColor}
+.reg-world{color:var(--world)} .reg-nl{color:var(--nl)} .reg-tr{color:var(--tr)}
+.lvl{border:1px solid var(--line);padding:0 5px;border-radius:3px}
+.new{background:var(--ink);color:var(--bg);padding:0 6px;border-radius:3px}
+.item h3{font-family:var(--f-read);font-weight:600;font-size:1.375rem;line-height:1.2;margin:8px 0 6px;text-wrap:balance}
+.body{font-family:var(--f-read);font-size:1.125rem;line-height:1.55;max-width:60ch;display:flex;flex-direction:column;gap:.7em}
+.body p{margin:0}
+/* a sentence that has a Turkish translation: point at it (or tap it) to see the translation in a bubble */
+.s{border-radius:3px;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:background-color .12s}
+.s.on{background:var(--mark)}
+.tip{position:absolute;left:0;top:0;z-index:8;width:max-content;max-width:min(27rem,calc(100vw - 24px));background:var(--ink);color:var(--bg);font-family:var(--f-ui);font-size:14px;line-height:1.45;padding:9px 12px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);pointer-events:none}
+@media (prefers-reduced-motion: reduce){.s{transition:none}}
+.words{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.word{font-size:13px;padding:5px 10px;border-radius:6px;border:0;background:var(--chip);color:var(--ink);cursor:pointer;text-align:left}
+.word[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.acts{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;font-size:13px}
+.acts button{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:13px}
+.acts a{color:var(--muted);text-underline-offset:3px}
+.gist{margin:12px 0 0;padding:10px 12px;background:var(--surface);border-radius:6px;font-size:14px;line-height:1.5;max-width:60ch}
+.empty{padding-block:56px;border-top:1px solid var(--line);margin-top:20px}
+.empty h2{font-family:var(--f-read);font-weight:600;font-size:1.375rem;margin:0 0 6px}
+.empty p{margin:0;color:var(--muted);max-width:52ch}
+.hint{color:var(--muted);font-size:13px;padding-block:28px 40px;border-top:1px solid var(--line);margin:0}
+.note{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:480px;margin-inline:auto;background:var(--ink);color:var(--bg);padding:12px 14px;border-radius:8px;font-size:14px;z-index:9}
+@media (max-width:420px){
+  .item{grid-template-columns:2.75rem minmax(0,1fr);column-gap:10px}
+  .item h3{font-size:1.25rem}
+}
+</style>
+
+<header class="mast" lang="tr">
+  <div class="wrap">
+    <div class="mast-row">
+      <h1>Sade Haber</h1>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">Bağlanıyor…</span></div>
+    </div>
+    <div class="bar" id="bar">
+      <button class="pill" type="button" id="f-all" data-f="all" aria-pressed="true">Tümü <span class="n" id="n-all"></span></button>
+      <button class="pill" type="button" id="f-world" data-f="world" aria-pressed="false">Dünya <span class="n" id="n-world"></span></button>
+      <button class="pill" type="button" id="f-nl" data-f="nl" aria-pressed="false">Hollanda <span class="n" id="n-nl"></span></button>
+      <button class="pill" type="button" id="f-tr" data-f="tr" aria-pressed="false">Türkiye <span class="n" id="n-tr"></span></button>
+      <button class="refresh" type="button" id="refreshBtn" hidden>Şimdi güncelle</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" lang="tr">
+  <p class="lede">Dünyadan, Hollanda'dan ve Türkiye'den günün haberleri. Her haber kısa bir yazı: ne oldu, arka planı ne, neden önemli. Dili B1–B2 seviyesinde İngilizce. B2 haberlerde bir cümlenin üzerine gel ya da dokun, Türkçesi çıksın.</p>
+  <div id="feed">
+    <div class="empty">
+      <h2>Haberler geliyor…</h2>
+      <p>Yeni haberler gün içinde kendiliğinden buraya eklenir. Sayfayı yenilemen gerekmez.</p>
+    </div>
+  </div>
+  <p class="hint">“Cümle çevirisi” yazan B2 haberlerde bir cümlenin üzerine gel ya da cümleye dokun, Türkçesi görünsün. Haberin altındaki kelimelere dokununca anlamları açılır. Haberin tamamı için “Kaynak” bağlantısını aç.</p>
+</main>
+<p class="note" id="note" role="status" hidden></p>
+<div class="tip" id="tip" role="tooltip" lang="tr" hidden></div>
+
+<script>
+(function(){
+  var REGIONS = {world:'Dünya', nl:'Hollanda', tr:'Türkiye'};
+  var SERVER = 'Claude Code Remote';
+  var COOLDOWN = 10 * 60 * 1000;
+  var $ = function(id){ return document.getElementById(id); };
+  var store = {
+    get: function(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+    set: function(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+  };
+
+  var items = [], loaded = false, dbOk = null, updatedAt = null, triggerId = null, mcp = null;
+  var firedAt = Number(store.get('sh_fired')) || 0;
+  var filter = store.get('sh_filter');
+  if (['all','world','nl','tr'].indexOf(filter) < 0) filter = 'all';
+  var newSince = Date.parse(store.get('sh_seen') || '') || Date.now();
+  var openGist = new Set(), openWord = new Set();
+
+  var timeFmt = new Intl.DateTimeFormat('tr-TR', {hour:'2-digit', minute:'2-digit'});
+  var dayFmt = new Intl.DateTimeFormat('tr-TR', {day:'numeric', month:'long', weekday:'long'});
+  function dayKey(d){ return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
+  function dayLabel(d){
+    var t = new Date(), y = new Date(); y.setDate(t.getDate() - 1);
+    if (dayKey(d) === dayKey(t)) return 'Bugün · ' + dayFmt.format(d);
+    if (dayKey(d) === dayKey(y)) return 'Dün · ' + dayFmt.format(d);
+    return dayFmt.format(d);
+  }
+  function el(tag, cls, text){
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function str(v){ return typeof v === 'string' ? v.trim() : ''; }
+
+  function normalize(id, d){
+    if (!d) return null;
+    var date = new Date(str(d.at));
+    if (!REGIONS[d.region] || !str(d.title) || !str(d.body) || isNaN(date)) return null;
+    var words = Array.isArray(d.words) ? d.words.filter(function(w){ return w && str(w.en) && str(w.tr); }).slice(0, 5) : [];
+    var url = str(d.url);
+    // Optional sentence-by-sentence translation: [{p: paragraph index, en, tr}, …]. Used only when it covers the body.
+    var sents = [];
+    if (str(d.level) === 'B2' && Array.isArray(d.sents)){
+      d.sents.forEach(function(s){
+        if (s && str(s.en)) sents.push({p: Number(s.p) || 0, en: str(s.en), tr: str(s.tr)});
+      });
+      var covered = sents.reduce(function(n, s){ return n + s.en.length; }, 0);
+      if (covered < str(d.body).length * 0.8) sents = [];
+    }
+    return {
+      id: id, region: d.region, title: str(d.title), body: str(d.body), date: date,
+      level: /^[ABC][12]$/.test(str(d.level)) ? str(d.level) : '',
+      place: str(d.place), gist: str(d.tr), source: str(d.source),
+      url: /^https?:\/\//i.test(url) ? url : '', words: words, sents: sents
+    };
+  }
+
+  function itemEl(it){
+    var art = el('article', 'item');
+    var when = el('div', 'when');
+    var time = el('time', null, timeFmt.format(it.date));
+    time.dateTime = it.date.toISOString();
+    when.append(time);
+
+    var story = el('div', 'story');
+    var line = el('div', 'line');
+    line.append(el('span', 'reg reg-' + it.region, REGIONS[it.region]));
+    if (it.place) line.append(el('span', null, it.place));
+    if (it.level) line.append(el('span', 'lvl', it.level));
+    if (it.sents.length) line.append(el('span', null, 'Cümle çevirisi'));
+    if (it.date.getTime() > newSince) line.append(el('span', 'new', 'Yeni'));
+    var h = el('h3', null, it.title), body = el('div', 'body');
+    if (it.sents.length){
+      var par = null, cur = null;
+      it.sents.forEach(function(s){
+        if (!par || s.p !== cur){ par = el('p'); body.append(par); cur = s.p; }
+        else par.append(' ');
+        var sp = el('span', s.tr ? 's' : null, s.en);
+        if (s.tr){ sp.dataset.tr = s.tr; sp.tabIndex = 0; }
+        par.append(sp);
+      });
+    } else {
+      it.body.split(/\n\s*\n/).forEach(function(par){
+        par = par.trim();
+        if (par) body.append(el('p', null, par));
+      });
+    }
+    h.lang = 'en'; body.lang = 'en';
+    story.append(line, h, body);
+
+    if (it.words.length){
+      var words = el('div', 'words');
+      it.words.forEach(function(w, i){
+        var key = it.id + ':' + i, on = openWord.has(key);
+        var b = el('button', 'word', on ? w.en + ' = ' + w.tr : w.en);
+        b.type = 'button';
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.title = 'Türkçesini göster';
+        b.addEventListener('click', function(){
+          var now = !openWord.has(key);
+          if (now) openWord.add(key); else openWord.delete(key);
+          b.textContent = now ? w.en + ' = ' + w.tr : w.en;
+          b.setAttribute('aria-pressed', now ? 'true' : 'false');
+        });
+        words.append(b);
+      });
+      story.append(words);
+    }
+
+    var acts = el('div', 'acts'), gist = null;
+    if (it.gist){
+      var gOn = openGist.has(it.id);
+      var gb = el('button', null, gOn ? 'Türkçesini gizle' : 'Türkçe özet');
+      gb.type = 'button';
+      gb.setAttribute('aria-expanded', gOn ? 'true' : 'false');
+      gist = el('p', 'gist', it.gist);
+      gist.lang = 'tr';
+      gist.hidden = !gOn;
+      gb.addEventListener('click', function(){
+        var now = !openGist.has(it.id);
+        if (now) openGist.add(it.id); else openGist.delete(it.id);
+        gist.hidden = !now;
+        gb.textContent = now ? 'Türkçesini gizle' : 'Türkçe özet';
+        gb.setAttribute('aria-expanded', now ? 'true' : 'false');
+      });
+      acts.append(gb);
+    }
+    if (it.url){
+      var a = el('a', null, 'Kaynak: ' + (it.source || 'haberi aç') + ' ↗');
+      a.href = it.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      acts.append(a);
+    } else if (it.source){
+      acts.append(el('span', null, 'Kaynak: ' + it.source));
+    }
+    if (acts.childNodes.length) story.append(acts);
+    if (gist) story.append(gist);
+
+    art.append(when, story);
+    return art;
+  }
+
+  // Sentence translation bubble. Mouse: shows while the pointer is on a sentence.
+  // Touch: a tap opens it, a second tap or a tap elsewhere closes it. Keyboard: Tab to a sentence, Esc closes.
+  var tip = $('tip'), tipFor = null, tipPinned = false, lastPointer = 'mouse';
+  function placeTip(){
+    if (!tipFor) return;
+    var rects = tipFor.getClientRects();
+    if (!rects.length){ hideTip(); return; }
+    var first = rects[0], last = rects[rects.length - 1], gut = 12;
+    var vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    tip.style.left = '0px'; tip.style.top = '0px';
+    var w = tip.offsetWidth, h = tip.offsetHeight;
+    var left = Math.max(gut, Math.min(last.left, vw - w - gut));
+    var top = last.bottom + 8;
+    if (top + h > vh - gut && first.top - h - 8 > gut) top = first.top - h - 8;
+    tip.style.left = Math.round(left + window.scrollX) + 'px';
+    tip.style.top = Math.round(top + window.scrollY) + 'px';
+  }
+  function showTip(sp, pin){
+    if (tipFor && tipFor !== sp){ tipFor.classList.remove('on'); tipFor.removeAttribute('aria-describedby'); }
+    tipFor = sp; tipPinned = !!pin;
+    sp.classList.add('on');
+    sp.setAttribute('aria-describedby', 'tip');
+    tip.textContent = sp.dataset.tr || '';
+    tip.hidden = false;
+    placeTip();
+  }
+  function hideTip(){
+    if (tipFor){ tipFor.classList.remove('on'); tipFor.removeAttribute('aria-describedby'); }
+    tipFor = null; tipPinned = false;
+    tip.hidden = true;
+  }
+  function sentenceOf(t){ return t && t.closest ? t.closest('.s') : null; }
+  document.addEventListener('pointerdown', function(e){ lastPointer = e.pointerType || 'mouse'; }, true);
+  $('feed').addEventListener('pointerover', function(e){
+    if (e.pointerType !== 'mouse') return;
+    var sp = sentenceOf(e.target);
+    if (sp && sp !== tipFor) showTip(sp, false);
+  });
+  $('feed').addEventListener('pointerout', function(e){
+    if (e.pointerType !== 'mouse') return;
+    var sp = sentenceOf(e.target);
+    if (sp && sp === tipFor && !sp.contains(e.relatedTarget)) hideTip();
+  });
+  $('feed').addEventListener('focusin', function(e){
+    var sp = sentenceOf(e.target);
+    if (sp && sp !== tipFor) showTip(sp, false);
+  });
+  $('feed').addEventListener('focusout', function(e){
+    var sp = sentenceOf(e.target);
+    if (sp && sp === tipFor && !tipPinned && !sp.matches(':hover')) hideTip();
+  });
+  document.addEventListener('click', function(e){
+    if (lastPointer === 'mouse') return;
+    var sp = sentenceOf(e.target);
+    if (!sp){ hideTip(); return; }
+    if (tipFor === sp && tipPinned) hideTip(); else showTip(sp, true);
+  });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') hideTip(); });
+  window.addEventListener('resize', placeTip);
+
+  function emptyEl(title, text){
+    var box = el('div', 'empty');
+    box.append(el('h2', null, title), el('p', null, text));
+    return box;
+  }
+
+  function render(){
+    var counts = {all: items.length, world: 0, nl: 0, tr: 0};
+    items.forEach(function(i){ counts[i.region]++; });
+    Object.keys(counts).forEach(function(k){
+      $('n-' + k).textContent = loaded ? counts[k] : '';
+      $('f-' + k).setAttribute('aria-pressed', filter === k ? 'true' : 'false');
+    });
+
+    var feed = $('feed');
+    hideTip();
+    feed.textContent = '';
+    if (dbOk === false){
+      feed.append(emptyEl('Haberler yüklenemedi', 'İnternet bağlantını kontrol edip sayfayı yenile.'));
+      return;
+    }
+    if (!loaded){
+      feed.append(emptyEl('Haberler geliyor…', 'Yeni haberler gün içinde kendiliğinden buraya eklenir. Sayfayı yenilemen gerekmez.'));
+      return;
+    }
+    var list = items.filter(function(i){ return filter === 'all' || i.region === filter; });
+    if (!list.length){
+      feed.append(emptyEl('Henüz haber yok',
+        filter === 'all' ? 'İlk haberler bir sonraki güncellemede burada görünür.'
+                         : REGIONS[filter] + ' için yeni haber bir sonraki güncellemede gelir.'));
+      return;
+    }
+    var last = '';
+    list.forEach(function(it){
+      var k = dayKey(it.date);
+      if (k !== last){ feed.append(el('h2', 'day', dayLabel(it.date))); last = k; }
+      feed.append(itemEl(it));
+    });
+  }
+
+  function renderStatus(){
+    var dot = $('dot'), text = $('statusText');
+    dot.className = 'dot' + (dbOk && loaded ? ' on' : '');
+    if (dbOk === false){ text.textContent = 'Bağlantı yok'; }
+    else if (!loaded){ text.textContent = 'Bağlanıyor…'; }
+    else {
+      var d = new Date(str(updatedAt));
+      if (isNaN(d)) text.textContent = 'Canlı';
+      else text.textContent = 'Son güncelleme ' + (dayKey(d) === dayKey(new Date()) ? '' : dayFmt.format(d) + ' ') + timeFmt.format(d);
+    }
+    var btn = $('refreshBtn');
+    btn.hidden = !(mcp && triggerId);
+    var cooling = Date.now() - firedAt < COOLDOWN;
+    btn.disabled = cooling;
+    btn.textContent = cooling ? 'Güncelleniyor…' : 'Şimdi güncelle';
+  }
+
+  var noteTimer = 0;
+  function note(msg){
+    var n = $('note');
+    n.textContent = msg; n.hidden = false;
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(function(){ n.hidden = true; }, 7000);
+  }
+
+  function refresh(){
+    if (!mcp || !triggerId) return;
+    if (Date.now() - firedAt < COOLDOWN){ note('Güncelleme zaten başladı. Yeni haberler birkaç dakika içinde görünür.'); return; }
+    var btn = $('refreshBtn');
+    btn.disabled = true; btn.textContent = 'Başlatılıyor…';
+    mcp.callTool(SERVER, 'fire_trigger', {trigger_id: triggerId}, {cache: false}).then(function(){
+      firedAt = Date.now();
+      store.set('sh_fired', String(firedAt));
+      note('Güncelleme başladı. Yeni haberler birkaç dakika içinde burada görünür.');
+      setTimeout(renderStatus, COOLDOWN + 500);
+      renderStatus();
+    }, function(e){
+      var code = e && e.code;
+      if (code === 'needs_reauth') note('Claude Code Remote bağlantısı yenilenmeli: claude.ai Ayarlar → Bağlayıcılar.');
+      else if (code === 'server_not_connected' || code === 'selection_required' || code === 'server_not_found')
+        note('Bu düğme Claude Code Remote bağlayıcısını kullanır. claude.ai Ayarlar → Bağlayıcılar bölümünden ekle.');
+      else if (code === 'not_in_manifest' || code === 'consent_required' || code === 'not_granted' || code === 'blocked_by_policy' || code === 'approval_required')
+        note('Bu sayfaya bağlayıcı izni verilmedi. Otomatik güncellemeler yine de gelir.');
+      else if (code === 'cancelled') { /* viewer cancelled; nothing to say */ }
+      else if (code === 'tool_error') note('Güncelleme görevi başlatılamadı. Otomatik güncellemeler yine de gelir.');
+      else note('Güncelleme şu an başlatılamadı. Biraz sonra tekrar dene.');
+      renderStatus();
+    });
+  }
+
+  $('bar').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-f]');
+    if (!b) return;
+    filter = b.dataset.f;
+    store.set('sh_filter', filter);
+    render();
+  });
+  $('refreshBtn').addEventListener('click', refresh);
+
+  render(); renderStatus();
+
+  var lastSig = '';
+  function load(){
+    fetch('news.json?t=' + Date.now(), {cache: 'no-store'}).then(function(r){
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.json();
+    }).then(function(data){
+      var list = Array.isArray(data.items) ? data.items : [];
+      var sig = String(data.updatedAt) + ':' + list.length;
+      dbOk = true;
+      if (loaded && sig === lastSig) return;
+      lastSig = sig;
+      items = list.map(function(d){ return normalize(d.id, d); }).filter(Boolean)
+        .sort(function(a, b){ return b.date - a.date; });
+      updatedAt = data.updatedAt || null;
+      if (!loaded){ loaded = true; store.set('sh_seen', new Date().toISOString()); }
+      render(); renderStatus();
+    }).catch(function(){
+      if (!loaded){ dbOk = false; render(); renderStatus(); }
+    });
+  }
+  load();
+  setInterval(function(){ if (!document.hidden) load(); }, 5 * 60 * 1000);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) load(); });
+})();
+</script>
+</body>
+</html>
